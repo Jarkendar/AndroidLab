@@ -26,3 +26,4 @@ rootProject.name = "AndroidLab"
 include(":app")
 include(":core")
 include(":core-test")
+include(":feature-weather")
