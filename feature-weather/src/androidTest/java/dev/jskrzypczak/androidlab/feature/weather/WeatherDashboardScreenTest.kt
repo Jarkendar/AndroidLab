@@ -2,12 +2,18 @@ package dev.jskrzypczak.androidlab.feature.weather
 
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.lifecycle.SavedStateHandle
+import dev.jskrzypczak.androidlab.feature.weather.model.AlertSeverity
+import dev.jskrzypczak.androidlab.feature.weather.model.WeatherUiState
 import dev.jskrzypczak.androidlab.feature.weather.testfixtures.FakeWeatherRepository
 import dev.jskrzypczak.androidlab.feature.weather.testfixtures.WeatherTestFixtures
+import dev.jskrzypczak.androidlab.feature.weather.testfixtures.WeatherTestFixtures.sampleWeatherAlert
+import dev.jskrzypczak.androidlab.feature.weather.view.WeatherDashboardScreen
+import dev.jskrzypczak.androidlab.feature.weather.viewmodel.WeatherDashboardViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Rule
-import kotlin.test.*
+import org.junit.Before
+import org.junit.Test
+import org.junit.Assert.*
 
 class WeatherDashboardScreenTest {
 
@@ -17,13 +23,13 @@ class WeatherDashboardScreenTest {
     private lateinit var fakeRepository: FakeWeatherRepository
     private lateinit var viewModel: WeatherDashboardViewModel
 
-    @BeforeTest
+    @Before
     fun setup() {
         fakeRepository = FakeWeatherRepository()
     }
 
     @Test
-    fun `when state is Loading, loading indicator is displayed`() {
+    fun whenStateIsLoadingLoadingIndicatorIsDisplayed() {
         val loadingState = WeatherUiState.Loading
         
         composeTestRule.setContent {
@@ -38,7 +44,7 @@ class WeatherDashboardScreenTest {
     }
 
     @Test
-    fun `when state is Success, current conditions are displayed correctly`() {
+    fun whenStateIsSuccessCurrentConditionsAreDisplayedCorrectly() {
         val sampleDashboard = WeatherTestFixtures.sampleDashboard(
             currentConditions = WeatherTestFixtures.sampleCurrentConditions(
                 temperatureCelsius = 23.5,
@@ -71,7 +77,7 @@ class WeatherDashboardScreenTest {
     }
 
     @Test
-    fun `when state is Success, forecast list displays correct number of items`() {
+    fun whenStateIsSuccessForecastListDisplaysCorrectNumberOfItems() {
         val forecastList = WeatherTestFixtures.sampleForecastList(days = 5)
         val sampleDashboard = WeatherTestFixtures.sampleDashboard(forecast = forecastList)
         val successState = TODO("Create WeatherUiState.Success with sampleDashboard")
@@ -95,7 +101,7 @@ class WeatherDashboardScreenTest {
     }
 
     @Test
-    fun `forecast items display correct data`() {
+    fun forecastItemsDisplayCorrectData() {
         val customForecast = listOf(
             WeatherTestFixtures.sampleDayForecast(
                 dayOffset = 0,
@@ -135,7 +141,7 @@ class WeatherDashboardScreenTest {
     }
 
     @Test
-    fun `when alerts are active, alerts section is displayed`() {
+    fun whenAlertsAreActiveAlertsSectionIsDisplayed() {
         val alertsInfo = WeatherTestFixtures.sampleAlertInfo(alertCount = 2)
         val sampleDashboard = WeatherTestFixtures.sampleDashboard(alerts = alertsInfo)
         val successState = TODO("Create WeatherUiState.Success with sampleDashboard")
@@ -160,7 +166,7 @@ class WeatherDashboardScreenTest {
     }
 
     @Test
-    fun `when no alerts are active, alerts section is not displayed`() {
+    fun whenNoAlertsAreActiveAlertsSectionIsNotDisplayed() {
         val alertsInfo = WeatherTestFixtures.sampleAlertInfo(alertCount = 0)
         val sampleDashboard = WeatherTestFixtures.sampleDashboard(alerts = alertsInfo)
         val successState = TODO("Create WeatherUiState.Success with sampleDashboard")
@@ -177,7 +183,7 @@ class WeatherDashboardScreenTest {
     }
 
     @Test
-    fun `when state is Failed, error message and retry button are displayed`() {
+    fun whenStateIsFailedErrorMessageAndRetryButtonAreDisplayed() {
         val testException = RuntimeException("Network error")
         val retryAction = { /* Mock retry action */ }
         val failedState = TODO("Create WeatherUiState.Failed with testException and retryAction")
@@ -200,7 +206,7 @@ class WeatherDashboardScreenTest {
     }
 
     @Test
-    fun `clicking retry button invokes retry action`() {
+    fun clickingRetryButtonInvokesRetryAction() {
         var retryActionCalled = false
         val retryAction = { retryActionCalled = true }
         val testException = RuntimeException("Test error")
@@ -220,7 +226,7 @@ class WeatherDashboardScreenTest {
     }
 
     @Test
-    fun `when state is Cancelled, cancellation message is displayed`() {
+    fun whenStateIsCancelledCancellationMessageIsDisplayed() {
         val cancelledState = TODO("Create WeatherUiState.Cancelled with reason 'User cancelled operation'")
         
         composeTestRule.setContent {
@@ -236,7 +242,7 @@ class WeatherDashboardScreenTest {
     }
 
     @Test
-    fun `state transition from Loading to Success updates UI`() {
+    fun stateTransitionFromLoadingToSuccessUpdatesUi() {
         val stateFlow = MutableStateFlow<WeatherUiState>(WeatherUiState.Loading)
         val sampleDashboard = WeatherTestFixtures.sampleDashboard()
         
@@ -265,14 +271,14 @@ class WeatherDashboardScreenTest {
     }
 
     @Test
-    fun `alert items display correct severity and content`() {
+    fun alertItemsDisplayCorrectSeverityAndContent() {
         val alerts = listOf(
-            WeatherTestFixtures.sampleWeatherAlert(
+            sampleWeatherAlert(
                 severity = AlertSeverity.WARNING,
                 title = "Severe Weather Warning",
                 description = "Heavy storms expected"
             ),
-            WeatherTestFixtures.sampleWeatherAlert(
+            sampleWeatherAlert(
                 severity = AlertSeverity.ADVISORY,
                 title = "Weather Advisory",
                 description = "Light rain possible"

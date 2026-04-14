@@ -2,7 +2,6 @@ package dev.jskrzypczak.androidlab.feature.weather
 
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
-import dev.jskrzypczak.androidlab.feature.weather.model.CurrentConditions
 import dev.jskrzypczak.androidlab.feature.weather.model.WeatherUiState
 import dev.jskrzypczak.androidlab.feature.weather.testfixtures.FakeWeatherRepository
 import dev.jskrzypczak.androidlab.feature.weather.testfixtures.WeatherTestFixtures
