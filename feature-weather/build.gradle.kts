@@ -57,7 +57,9 @@ dependencies {
     testImplementation(libs.bundles.testing.unit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.bundles.testing.android)
-    
+    testImplementation(kotlin("test"))
+    testImplementation(kotlin("test-junit"))
+
     // Debug
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)

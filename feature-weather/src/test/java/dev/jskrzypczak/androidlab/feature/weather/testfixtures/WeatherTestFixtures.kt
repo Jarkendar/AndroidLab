@@ -1,5 +1,11 @@
 package dev.jskrzypczak.androidlab.feature.weather.testfixtures
 
+import dev.jskrzypczak.androidlab.feature.weather.model.AlertSeverity
+import dev.jskrzypczak.androidlab.feature.weather.model.AlertsInfo
+import dev.jskrzypczak.androidlab.feature.weather.model.CurrentConditions
+import dev.jskrzypczak.androidlab.feature.weather.model.DayForecast
+import dev.jskrzypczak.androidlab.feature.weather.model.WeatherAlert
+import dev.jskrzypczak.androidlab.feature.weather.model.WeatherDashboard
 import java.time.LocalDate
 import java.time.Instant
 
@@ -13,7 +19,7 @@ object WeatherTestFixtures {
         description: String = "Partly Cloudy",
         iconCode: String = "04d"
     ): CurrentConditions {
-        return TODO("Create CurrentConditions with provided parameters")
+        return CurrentConditions(temperatureCelsius, feelsLikeCelsius, humidity, windSpeedKmh, description, iconCode)
     }
 
     fun sampleDayForecast(
@@ -24,7 +30,7 @@ object WeatherTestFixtures {
         description: String = "Mostly Sunny",
         iconCode: String = "02d"
     ): DayForecast {
-        return TODO("Create DayForecast with date = LocalDate.now().plusDays(dayOffset) and other parameters")
+        return DayForecast(LocalDate.now().plusDays(dayOffset.toLong()), minTempCelsius, maxTempCelsius, precipitationProbability, description, iconCode)
     }
 
     fun sampleForecastList(days: Int = 7): List<DayForecast> {
@@ -46,7 +52,7 @@ object WeatherTestFixtures {
         description: String = "Moderate weather conditions expected",
         expiresAt: Instant = Instant.now().plusSeconds(3600) // 1 hour from now
     ): WeatherAlert {
-        return TODO("Create WeatherAlert with provided parameters")
+        return WeatherAlert(severity, title, description, expiresAt)
     }
 
     fun sampleAlertInfo(
@@ -69,7 +75,7 @@ object WeatherTestFixtures {
             emptyList()
         }
         
-        return TODO("Create AlertsInfo with hasActiveAlerts and alerts list")
+        return AlertsInfo(hasActiveAlerts, alerts)
     }
 
     fun sampleDashboard(
@@ -77,7 +83,7 @@ object WeatherTestFixtures {
         forecast: List<DayForecast> = sampleForecastList(),
         alerts: AlertsInfo = sampleAlertInfo()
     ): WeatherDashboard {
-        return TODO("Create WeatherDashboard with provided parameters")
+        return WeatherDashboard(currentConditions, forecast, alerts)
     }
 
     // Additional helper methods for specific test scenarios

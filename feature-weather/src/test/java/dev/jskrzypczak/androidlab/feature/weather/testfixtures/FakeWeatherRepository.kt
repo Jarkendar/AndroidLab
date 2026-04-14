@@ -1,9 +1,12 @@
 package dev.jskrzypczak.androidlab.feature.weather.testfixtures
 
+import dev.jskrzypczak.androidlab.feature.weather.model.WeatherDashboard
+import dev.jskrzypczak.androidlab.feature.weather.model.WeatherRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.flow
+import org.jetbrains.annotations.TestOnly
 
 class FakeWeatherRepository : WeatherRepository {
     
@@ -17,7 +20,9 @@ class FakeWeatherRepository : WeatherRepository {
     val cityDataMap = mutableMapOf<String, WeatherDashboard>()
     
     private val _weatherFlow = MutableSharedFlow<WeatherDashboard>(replay = 1)
-    
+    val activeSubscriptionCount get() = _weatherFlow.subscriptionCount
+
+
     fun emit(dashboard: WeatherDashboard) {
         _weatherFlow.tryEmit(dashboard)
     }

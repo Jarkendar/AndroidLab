@@ -1,9 +1,14 @@
 package dev.jskrzypczak.androidlab.feature.weather
 
+import dev.jskrzypczak.androidlab.feature.weather.model.AlertSeverity
+import dev.jskrzypczak.androidlab.feature.weather.model.AlertsInfo
+import dev.jskrzypczak.androidlab.feature.weather.model.CurrentConditions
+import dev.jskrzypczak.androidlab.feature.weather.model.DayForecast
+import dev.jskrzypczak.androidlab.feature.weather.model.WeatherAlert
+import dev.jskrzypczak.androidlab.feature.weather.model.WeatherDashboard
+import dev.jskrzypczak.androidlab.feature.weather.model.WeatherUiState
+import kotlin.test.Test
 import kotlin.test.*
-import kotlin.reflect.KClass
-import kotlin.reflect.full.isSubclassOf
-import kotlin.reflect.full.sealedSubclasses
 import java.time.LocalDate
 import java.time.Instant
 
@@ -64,7 +69,11 @@ class WeatherUiStateStructureTest {
 
     @Test
     fun `WeatherDashboard contains required non-null properties`() {
-        val dashboard = TODO("Create sample WeatherDashboard")
+        val dashboard = WeatherDashboard(
+            CurrentConditions(.0, .0, 34, 1.0, "description", "iconCode"),
+            listOf(),
+            AlertsInfo(true, listOf())
+        )
         
         assertNotNull(dashboard.currentConditions)
         assertNotNull(dashboard.forecast)
@@ -73,7 +82,14 @@ class WeatherUiStateStructureTest {
 
     @Test
     fun `CurrentConditions is data class with correct properties`() {
-        val currentConditions = TODO("Create sample CurrentConditions")
+        val currentConditions = CurrentConditions(
+            .0,
+            -0.5,
+            50,
+            20.0,
+            "description",
+            "iconCode"
+        )
         
         assertTrue(currentConditions.temperatureCelsius is Double)
         assertTrue(currentConditions.feelsLikeCelsius is Double)
@@ -85,7 +101,13 @@ class WeatherUiStateStructureTest {
 
     @Test
     fun `DayForecast is data class with correct properties`() {
-        val dayForecast = TODO("Create sample DayForecast")
+        val dayForecast = DayForecast(
+            LocalDate.now(),
+            .0,
+            1.0,
+            1,
+            "test",
+            "iconCodeTest")
         
         assertTrue(dayForecast.date is LocalDate)
         assertTrue(dayForecast.minTempCelsius is Double)
@@ -97,7 +119,10 @@ class WeatherUiStateStructureTest {
 
     @Test
     fun `AlertsInfo is data class with correct properties`() {
-        val alertsInfo = TODO("Create sample AlertsInfo")
+        val alertsInfo = AlertsInfo(
+            true,
+            listOf()
+        )
         
         assertTrue(alertsInfo.hasActiveAlerts is Boolean)
         assertTrue(alertsInfo.alerts is List<*>)
@@ -105,7 +130,11 @@ class WeatherUiStateStructureTest {
 
     @Test
     fun `WeatherAlert is data class with correct properties`() {
-        val weatherAlert = TODO("Create sample WeatherAlert")
+        val weatherAlert = WeatherAlert(
+            AlertSeverity.WATCH,
+            "Title",
+            "description",
+            Instant.now())
         
         assertTrue(weatherAlert.severity is AlertSeverity)
         assertTrue(weatherAlert.title is String)
@@ -115,7 +144,7 @@ class WeatherUiStateStructureTest {
 
     @Test
     fun `AlertSeverity enum has correct values`() {
-        val values = AlertSeverity.values()
+        val values = AlertSeverity.entries.toTypedArray()
         assertEquals(3, values.size)
         
         val expectedValues = setOf(AlertSeverity.ADVISORY, AlertSeverity.WATCH, AlertSeverity.WARNING)
@@ -124,7 +153,7 @@ class WeatherUiStateStructureTest {
 
     @Test
     fun `data class copy works correctly for immutability`() {
-        val original = TODO("Create sample CurrentConditions")
+        val original = CurrentConditions(.0, 50.0, 50, 20.0,"test", "iconCode")
         val copied = original.copy(temperatureCelsius = 25.0)
         
         assertNotEquals(original.temperatureCelsius, copied.temperatureCelsius)
@@ -134,13 +163,13 @@ class WeatherUiStateStructureTest {
 
     @Test
     fun `humidity values are within valid range 0 to 100`() {
-        val currentConditions = TODO("Create sample CurrentConditions with humidity 85")
+        val currentConditions = CurrentConditions(.0, .0, 85, .0,"description", "iconCode")
         assertTrue(currentConditions.humidity in 0..100)
     }
 
     @Test
     fun `precipitation probability is within valid range 0 to 100`() {
-        val dayForecast = TODO("Create sample DayForecast with precipitation 60")
+        val dayForecast = DayForecast(LocalDate.now(), .0, .0, 60, "description", "iconCode")
         assertTrue(dayForecast.precipitationProbability in 0..100)
     }
 }

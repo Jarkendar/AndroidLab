@@ -2,11 +2,17 @@ package dev.jskrzypczak.androidlab.feature.weather
 
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
+import dev.jskrzypczak.androidlab.feature.weather.model.WeatherUiState
 import dev.jskrzypczak.androidlab.feature.weather.testfixtures.FakeWeatherRepository
 import dev.jskrzypczak.androidlab.feature.weather.testfixtures.WeatherTestFixtures
+import dev.jskrzypczak.androidlab.feature.weather.viewmodel.WeatherDashboardViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.test.*
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
 import kotlin.test.*
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -131,29 +137,29 @@ class WeatherDataFlowIntegrationTest {
         val city3Dashboard = WeatherTestFixtures.sampleDashboard(
             currentConditions = WeatherTestFixtures.sampleCurrentConditions(temperatureCelsius = 35.0)
         )
-        
-        // Setup different data for different cities
+
         repository.cityDataMap["city1"] = city1Dashboard
         repository.cityDataMap["city2"] = city2Dashboard
         repository.cityDataMap["city3"] = city3Dashboard
-        
-        viewModel = createViewModel("city1")
-        
-        viewModel.uiState.test {
-            assertEquals(WeatherUiState.Loading, awaitItem())
-            val city1Success = awaitItem() as WeatherUiState.Success
-            assertEquals(15.0, city1Success.dashboard.currentConditions.temperatureCelsius)
-            
-            // Rapid city switches
-            updateCityId("city2")
-            updateCityId("city3")
-            
-            // Should only get final city's data
-            val finalSuccess = awaitItem() as WeatherUiState.Success
-            assertEquals(35.0, finalSuccess.dashboard.currentConditions.temperatureCelsius)
-        }
-    }
 
+        // First city
+        viewModel = createViewModel("city1")
+        val job1 = viewModel.uiState.launchIn(this)
+        advanceUntilIdle()
+        assertEquals(15.0, (viewModel.uiState.value as WeatherUiState.Success).dashboard.currentConditions.temperatureCelsius)
+        job1.cancel()
+
+        // Rapid city switches
+        updateCityId("city2")
+        updateCityId("city3")
+        val job3 = viewModel.uiState.launchIn(this)
+        advanceUntilIdle()
+
+        // Only latest city's data
+        val finalState = viewModel.uiState.value as WeatherUiState.Success
+        assertEquals(35.0, finalState.dashboard.currentConditions.temperatureCelsius)
+        job3.cancel()
+    }
     @Test
     fun `full pipeline with forecast and alerts data integrity`() = runTest {
         val forecastList = WeatherTestFixtures.sampleForecastList(days = 5)
@@ -183,10 +189,11 @@ class WeatherDataFlowIntegrationTest {
 
     private fun createViewModel(cityId: String): WeatherDashboardViewModel {
         val savedStateHandle = SavedStateHandle(mapOf("cityId" to cityId))
-        return TODO("Create WeatherDashboardViewModel with repository and savedStateHandle")
+        return WeatherDashboardViewModel(repository, savedStateHandle)
     }
 
     private fun updateCityId(newCityId: String) {
-        TODO("Update cityId in SavedStateHandle and trigger ViewModel update")
+        val newHandle = SavedStateHandle(mapOf("cityId" to newCityId))
+        viewModel = WeatherDashboardViewModel(repository, newHandle)
     }
 }

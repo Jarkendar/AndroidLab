@@ -2,11 +2,18 @@ package dev.jskrzypczak.androidlab.feature.weather
 
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
+import dev.jskrzypczak.androidlab.feature.weather.model.CurrentConditions
+import dev.jskrzypczak.androidlab.feature.weather.model.WeatherUiState
 import dev.jskrzypczak.androidlab.feature.weather.testfixtures.FakeWeatherRepository
 import dev.jskrzypczak.androidlab.feature.weather.testfixtures.WeatherTestFixtures
+import dev.jskrzypczak.androidlab.feature.weather.viewmodel.WeatherDashboardViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.test.*
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
 import kotlin.test.*
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -31,7 +38,7 @@ class WeatherDashboardViewModelTest {
 
     @Test
     fun `initial state is Loading`() = runTest {
-        viewModel = TODO("Create WeatherDashboardViewModel with repository and savedStateHandle")
+        viewModel = createWeatherDashboardViewModel()
         
         assertEquals(WeatherUiState.Loading, viewModel.uiState.value)
     }
@@ -41,7 +48,7 @@ class WeatherDashboardViewModelTest {
         val sampleDashboard = WeatherTestFixtures.sampleDashboard()
         repository.emit(sampleDashboard)
         
-        viewModel = TODO("Create WeatherDashboardViewModel")
+        viewModel = createWeatherDashboardViewModel()
         
         viewModel.uiState.test {
             assertEquals(WeatherUiState.Loading, awaitItem())
@@ -56,7 +63,7 @@ class WeatherDashboardViewModelTest {
         repository.shouldThrow = true
         repository.throwableToEmit = testException
         
-        viewModel = TODO("Create WeatherDashboardViewModel")
+        viewModel = createWeatherDashboardViewModel()
         
         viewModel.uiState.test {
             assertEquals(WeatherUiState.Loading, awaitItem())
@@ -74,7 +81,7 @@ class WeatherDashboardViewModelTest {
         repository.shouldThrow = true
         repository.throwableToEmit = testException
         
-        viewModel = TODO("Create WeatherDashboardViewModel")
+        viewModel = createWeatherDashboardViewModel()
         
         viewModel.uiState.test {
             assertEquals(WeatherUiState.Loading, awaitItem())
@@ -99,7 +106,7 @@ class WeatherDashboardViewModelTest {
         )
         
         repository.emit(initialDashboard)
-        viewModel = TODO("Create WeatherDashboardViewModel")
+        viewModel = createWeatherDashboardViewModel()
         
         viewModel.uiState.test {
             assertEquals(WeatherUiState.Loading, awaitItem())
@@ -117,7 +124,7 @@ class WeatherDashboardViewModelTest {
 
     @Test
     fun `cancel transitions state to Cancelled with reason`() = runTest {
-        viewModel = TODO("Create WeatherDashboardViewModel")
+        viewModel = createWeatherDashboardViewModel()
         
         viewModel.uiState.test {
             assertEquals(WeatherUiState.Loading, awaitItem())
@@ -131,16 +138,20 @@ class WeatherDashboardViewModelTest {
 
     @Test
     fun `after cancel repository flow collection job is cancelled`() = runTest {
-        repository.delayMillis = 1000 // Long delay to test cancellation
-        viewModel = TODO("Create WeatherDashboardViewModel")
-        
+        repository.delayMillis = 1000
+        viewModel = createWeatherDashboardViewModel()
+
+        val job = viewModel.uiState.launchIn(this)
+        advanceUntilIdle()
+
         viewModel.cancel()
-        
-        // Emit after cancel should not affect state
+        advanceUntilIdle()
+
         repository.emit(WeatherTestFixtures.sampleDashboard())
         advanceTimeBy(2000)
-        
+
         assertTrue(viewModel.uiState.value is WeatherUiState.Cancelled)
+        job.cancel()
     }
 
     @Test
@@ -153,7 +164,7 @@ class WeatherDashboardViewModelTest {
             currentConditions = WeatherTestFixtures.sampleCurrentConditions(temperatureCelsius = 30.0)
         )
         
-        viewModel = TODO("Create WeatherDashboardViewModel")
+        viewModel = createWeatherDashboardViewModel()
         
         viewModel.uiState.test {
             assertEquals(WeatherUiState.Loading, awaitItem())
@@ -172,33 +183,59 @@ class WeatherDashboardViewModelTest {
     fun `cityId is correctly read from SavedStateHandle`() = runTest {
         val customCityId = "custom-city-456"
         savedStateHandle = SavedStateHandle(mapOf("cityId" to customCityId))
-        
-        viewModel = TODO("Create WeatherDashboardViewModel")
-        
+
+        viewModel = createWeatherDashboardViewModel()
+
+        val job = viewModel.uiState.launchIn(this)
+        advanceUntilIdle()
         // Verify repository was called with correct cityId
         assertEquals(customCityId, repository.lastObservedCityId)
+        job.cancel()
     }
 
     @Test
     fun `StateFlow uses WhileSubscribed with 5000ms timeout`() = runTest {
-        viewModel = TODO("Create WeatherDashboardViewModel")
-        
-        // This test would verify the SharingStarted configuration
-        // Implementation depends on how the ViewModel exposes this information
-        TODO("Verify SharingStarted.WhileSubscribed(5_000) configuration")
+        viewModel = createWeatherDashboardViewModel()
+
+        // Subscribe to uiState
+        val job = viewModel.uiState.launchIn(this)
+        advanceUntilIdle()
+        assertEquals(1, repository.activeSubscriptionCount.value)
+
+        // Unsubscribe
+        job.cancel()
+
+        // Before timeout — still subscribed upstream
+        advanceTimeBy(4_999)
+        assertEquals(1, repository.activeSubscriptionCount.value)
+
+        // After timeout — upstream stopped
+        advanceTimeBy(2)
+        assertEquals(0, repository.activeSubscriptionCount.value)
     }
 
     @Test
     fun `no coroutine leaks after ViewModel onCleared`() = runTest {
-        viewModel = TODO("Create WeatherDashboardViewModel")
+        viewModel = createWeatherDashboardViewModel()
         
         // Start collection
         repository.emit(WeatherTestFixtures.sampleDashboard())
-        
+        advanceUntilIdle()
+
+        val expected = viewModel.uiState.value
         // Clear ViewModel
         viewModel.onCleared()
-        
-        // Verify no active coroutines
-        TODO("Verify no coroutine leaks")
+        advanceUntilIdle()
+
+        assertEquals(0, repository.activeSubscriptionCount.value)
+
+        repository.emit(WeatherTestFixtures.sampleDashboard(WeatherTestFixtures.sampleCurrentConditions(temperatureCelsius = 99.0)))
+        advanceUntilIdle()
+
+        assertEquals(expected, viewModel.uiState.value)
+    }
+
+    private fun createWeatherDashboardViewModel(): WeatherDashboardViewModel {
+        return WeatherDashboardViewModel(repository, savedStateHandle)
     }
 }
