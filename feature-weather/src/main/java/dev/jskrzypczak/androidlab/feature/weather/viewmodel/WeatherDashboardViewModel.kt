@@ -22,16 +22,16 @@ import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
 
 class WeatherDashboardViewModel(
-    val repository: WeatherRepository,
+    private val repository: WeatherRepository,
     savedStateHandle: SavedStateHandle
-) : ViewModel() {
+) : ViewModel(), WeatherDashboardViewModelContract {
 
     private val _isCancelled = MutableStateFlow(false)
     private val cityId: String = savedStateHandle.get<String>("cityId") ?: ""
     private val cancelFlow = MutableStateFlow<WeatherUiState?>(null)
 
     private val retryTrigger = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
-    val uiState: StateFlow<WeatherUiState> = merge(
+    override val uiState: StateFlow<WeatherUiState> = merge(
         cancelFlow.filterNotNull(),
         retryTrigger
             .onStart { emit(Unit) }
@@ -60,13 +60,13 @@ class WeatherDashboardViewModel(
         //only change visibility
     }
 
-    fun cancel() {
+    override fun cancel() {
         _isCancelled.tryEmit(true)
         cancelFlow.value = WeatherUiState.Cancelled("Cancelled by user")
         retryTrigger.tryEmit(Unit)
     }
 
-    fun refresh() {
+    override fun refresh() {
         viewModelScope.launch { repository.refresh(cityId) }
     }
 }

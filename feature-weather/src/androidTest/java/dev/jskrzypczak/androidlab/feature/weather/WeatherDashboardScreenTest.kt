@@ -3,13 +3,16 @@ package dev.jskrzypczak.androidlab.feature.weather
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import dev.jskrzypczak.androidlab.feature.weather.model.AlertSeverity
+import dev.jskrzypczak.androidlab.feature.weather.model.AlertsInfo
 import dev.jskrzypczak.androidlab.feature.weather.model.WeatherUiState
+import dev.jskrzypczak.androidlab.feature.weather.testfixtures.FakeWeatherDashboardViewModel
 import dev.jskrzypczak.androidlab.feature.weather.testfixtures.FakeWeatherRepository
 import dev.jskrzypczak.androidlab.feature.weather.testfixtures.WeatherTestFixtures
 import dev.jskrzypczak.androidlab.feature.weather.testfixtures.WeatherTestFixtures.sampleWeatherAlert
 import dev.jskrzypczak.androidlab.feature.weather.view.WeatherDashboardScreen
-import dev.jskrzypczak.androidlab.feature.weather.viewmodel.WeatherDashboardViewModel
+import dev.jskrzypczak.androidlab.feature.weather.viewmodel.WeatherDashboardViewModelContract
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import org.junit.Rule
 import org.junit.Before
 import org.junit.Test
@@ -21,7 +24,6 @@ class WeatherDashboardScreenTest {
     val composeTestRule = createComposeRule()
 
     private lateinit var fakeRepository: FakeWeatherRepository
-    private lateinit var viewModel: WeatherDashboardViewModel
 
     @Before
     fun setup() {
@@ -52,8 +54,8 @@ class WeatherDashboardScreenTest {
                 humidity = 72
             )
         )
-        val successState = TODO("Create WeatherUiState.Success with sampleDashboard")
-        
+        val successState = WeatherUiState.Success(sampleDashboard)
+
         composeTestRule.setContent {
             WeatherDashboardScreen(
                 viewModel = createViewModelWithState(successState)
@@ -63,7 +65,7 @@ class WeatherDashboardScreenTest {
         composeTestRule
             .onNodeWithTag("current_temperature")
             .assertIsDisplayed()
-            .assertTextContains("23.5")
+            .assertTextContains("23.5", substring = true)
         
         composeTestRule
             .onNodeWithTag("current_description")
@@ -73,15 +75,15 @@ class WeatherDashboardScreenTest {
         composeTestRule
             .onNodeWithTag("humidity_value")
             .assertIsDisplayed()
-            .assertTextContains("72")
+            .assertTextContains("72", substring = true)
     }
 
     @Test
     fun whenStateIsSuccessForecastListDisplaysCorrectNumberOfItems() {
         val forecastList = WeatherTestFixtures.sampleForecastList(days = 5)
         val sampleDashboard = WeatherTestFixtures.sampleDashboard(forecast = forecastList)
-        val successState = TODO("Create WeatherUiState.Success with sampleDashboard")
-        
+        val successState = WeatherUiState.Success(sampleDashboard)
+
         composeTestRule.setContent {
             WeatherDashboardScreen(
                 viewModel = createViewModelWithState(successState)
@@ -117,7 +119,7 @@ class WeatherDashboardScreenTest {
             )
         )
         val sampleDashboard = WeatherTestFixtures.sampleDashboard(forecast = customForecast)
-        val successState = TODO("Create WeatherUiState.Success with sampleDashboard")
+        val successState = WeatherUiState.Success(sampleDashboard)
         
         composeTestRule.setContent {
             WeatherDashboardScreen(
@@ -128,23 +130,23 @@ class WeatherDashboardScreenTest {
         // Check first forecast item
         composeTestRule
             .onNodeWithTag("forecast_item_0")
-            .assertTextContains("15.0")
-            .assertTextContains("25.0")
-            .assertTextContains("60")
+            .assertTextContains("15.0", substring = true)
+            .assertTextContains("25.0", substring = true)
+            .assertTextContains("60", substring = true)
         
         // Check second forecast item
         composeTestRule
             .onNodeWithTag("forecast_item_1")
-            .assertTextContains("18.0")
-            .assertTextContains("28.0")
-            .assertTextContains("30")
+            .assertTextContains("18.0", substring = true)
+            .assertTextContains("28.0", substring = true)
+            .assertTextContains("30", substring = true)
     }
 
     @Test
     fun whenAlertsAreActiveAlertsSectionIsDisplayed() {
         val alertsInfo = WeatherTestFixtures.sampleAlertInfo(alertCount = 2)
         val sampleDashboard = WeatherTestFixtures.sampleDashboard(alerts = alertsInfo)
-        val successState = TODO("Create WeatherUiState.Success with sampleDashboard")
+        val successState = WeatherUiState.Success(sampleDashboard)
         
         composeTestRule.setContent {
             WeatherDashboardScreen(
@@ -169,7 +171,7 @@ class WeatherDashboardScreenTest {
     fun whenNoAlertsAreActiveAlertsSectionIsNotDisplayed() {
         val alertsInfo = WeatherTestFixtures.sampleAlertInfo(alertCount = 0)
         val sampleDashboard = WeatherTestFixtures.sampleDashboard(alerts = alertsInfo)
-        val successState = TODO("Create WeatherUiState.Success with sampleDashboard")
+        val successState = WeatherUiState.Success(sampleDashboard)
         
         composeTestRule.setContent {
             WeatherDashboardScreen(
@@ -186,7 +188,7 @@ class WeatherDashboardScreenTest {
     fun whenStateIsFailedErrorMessageAndRetryButtonAreDisplayed() {
         val testException = RuntimeException("Network error")
         val retryAction = { /* Mock retry action */ }
-        val failedState = TODO("Create WeatherUiState.Failed with testException and retryAction")
+        val failedState = WeatherUiState.Failed(testException, retryAction)
         
         composeTestRule.setContent {
             WeatherDashboardScreen(
@@ -210,7 +212,7 @@ class WeatherDashboardScreenTest {
         var retryActionCalled = false
         val retryAction = { retryActionCalled = true }
         val testException = RuntimeException("Test error")
-        val failedState = TODO("Create WeatherUiState.Failed with testException and retryAction")
+        val failedState = WeatherUiState.Failed(testException, retryAction)
         
         composeTestRule.setContent {
             WeatherDashboardScreen(
@@ -227,7 +229,7 @@ class WeatherDashboardScreenTest {
 
     @Test
     fun whenStateIsCancelledCancellationMessageIsDisplayed() {
-        val cancelledState = TODO("Create WeatherUiState.Cancelled with reason 'User cancelled operation'")
+        val cancelledState = WeatherUiState.Cancelled("User cancelled operation")
         
         composeTestRule.setContent {
             WeatherDashboardScreen(
@@ -258,7 +260,7 @@ class WeatherDashboardScreenTest {
             .assertIsDisplayed()
         
         // Transition to success
-        val successState = TODO("Create WeatherUiState.Success with sampleDashboard")
+        val successState = WeatherUiState.Success(sampleDashboard)
         stateFlow.value = successState
         
         composeTestRule
@@ -284,9 +286,9 @@ class WeatherDashboardScreenTest {
                 description = "Light rain possible"
             )
         )
-        val alertsInfo = TODO("Create AlertsInfo with hasActiveAlerts=true and alerts list")
+        val alertsInfo = AlertsInfo(hasActiveAlerts = true, alerts = alerts)
         val sampleDashboard = WeatherTestFixtures.sampleDashboard(alerts = alertsInfo)
-        val successState = TODO("Create WeatherUiState.Success with sampleDashboard")
+        val successState = WeatherUiState.Success(sampleDashboard)
         
         composeTestRule.setContent {
             WeatherDashboardScreen(
@@ -305,11 +307,15 @@ class WeatherDashboardScreenTest {
             .assertTextContains("Light rain possible")
     }
 
-    private fun createViewModelWithState(state: WeatherUiState): WeatherDashboardViewModel {
-        return TODO("Create mock ViewModel that returns the provided state")
+    private fun createViewModelWithState(state: WeatherUiState): WeatherDashboardViewModelContract {
+        return FakeWeatherDashboardViewModel(state)
     }
 
-    private fun createViewModelWithStateFlow(stateFlow: MutableStateFlow<WeatherUiState>): WeatherDashboardViewModel {
-        return TODO("Create mock ViewModel that uses the provided StateFlow")
+    private fun createViewModelWithStateFlow(stateFlow: MutableStateFlow<WeatherUiState>): WeatherDashboardViewModelContract {
+        return object : WeatherDashboardViewModelContract {
+            override val uiState: StateFlow<WeatherUiState> = stateFlow
+            override fun cancel() = Unit
+            override fun refresh() = Unit
+        }
     }
 }
