@@ -1,0 +1,98 @@
+name: Claude Code Review
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to review (leave empty for latest commit)'
+        required: false
+        type: string
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get diff
+        id: diff
+        run: |
+          if [ -n "${{ github.event.inputs.pr_number }}" ]; then
+            gh pr diff ${{ github.event.inputs.pr_number }} > diff.txt
+          else
+            git diff HEAD~1 HEAD > diff.txt
+          fi
+          echo "diff_size=$(wc -c < diff.txt)" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Claude review
+        run: |
+          DIFF=$(cat diff.txt)
+          
+          python3 - <<'EOF'
+          import os, json, urllib.request, sys
+
+          diff = open("diff.txt").read()
+          if len(diff) > 50000:
+              diff = diff[:50000] + "\n\n[diff truncated...]"
+
+          payload = {
+              "model": "claude-sonnet-4-20250514",
+              "max_tokens": 2000,
+              "messages": [{
+                  "role": "user",
+                  "content": f"""You are a senior Android/Kotlin developer. Review the following git diff.
+
+                          Focus on:
+                            - Kotlin idioms and best practices
+                            - Coroutines / Flow usage
+                            - Architecture (MVVM, Clean Architecture)
+                            - Potential bugs or edge cases
+                            - Test coverage gaps
+                            - Performance issues
+          
+                          Be concise. Use markdown. Group findings by severity: 🔴 Critical, 🟡 Warning, 🟢 Suggestion.
+          
+                          Diff:
+                              {diff}
+                  } ]
+          }
+          
+            req = urllib.request.Request(
+            "https://api.anthropic.com/v1/messages",
+            data=json.dumps(payload).encode(),
+            headers={
+            "Content-Type": "application/json",
+            "x-api-key": os.environ["ANTHROPIC_API_KEY"],
+            "anthropic-version": "2023-06-01"
+          }
+            )
+          
+            with urllib.request.urlopen(req) as resp:
+              result = json.loads(resp.read())
+              review = result["content"][0]["text"]
+              open("review.md", "w").write(review)
+            EOF
+
+      - name: Post review as PR comment
+        if: ${{ github.event.inputs.pr_number != '' }}
+        run: |
+          gh pr comment ${{ github.event.inputs.pr_number }} \
+            --body "## 🤖 Claude Code Review
+          
+          $(cat review.md)"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload review as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-review
+          path: review.md
