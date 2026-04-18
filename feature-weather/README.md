@@ -142,7 +142,7 @@ feature-weather/
 - [x] Repository interface
 - [x] ViewModel with declarative StateFlow pipeline
 - [x] Unit tests (31/31 passing)
-- [ ] Compose UI (`WeatherDashboardScreen`)
-- [ ] Instrumented Compose tests
+- [x] Compose UI (`WeatherDashboardScreen`)
+- [x] Instrumented Compose tests
 - [ ] Koin DI module
 - [ ] Navigation integration
