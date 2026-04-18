@@ -32,12 +32,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Run Claude review
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: |
-          python3 review.py
-
       - name: Create review script
         run: |
           cat > review.py << 'PYEOF'
@@ -82,6 +76,12 @@ jobs:
               review = result["content"][0]["text"]
               open("review.md", "w").write(review)
           PYEOF
+
+      - name: Run Claude review
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          python3 review.py
 
       - name: Post review as PR comment
         if: ${{ github.event.inputs.pr_number != '' }}
