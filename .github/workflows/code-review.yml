@@ -33,53 +33,55 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run Claude review
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
-          DIFF=$(cat diff.txt)
-          
-          python3 - <<'EOF'
-          import os, json, urllib.request, sys
+          python3 review.py
+
+      - name: Create review script
+        run: |
+          cat > review.py << 'PYEOF'
+          import os, json, urllib.request
 
           diff = open("diff.txt").read()
           if len(diff) > 50000:
               diff = diff[:50000] + "\n\n[diff truncated...]"
 
+          prompt = """You are a senior Android/Kotlin developer. Review the following git diff.
+
+          Focus on:
+          - Kotlin idioms and best practices
+          - Coroutines / Flow usage
+          - Architecture (MVVM, Clean Architecture)
+          - Potential bugs or edge cases
+          - Test coverage gaps
+          - Performance issues
+
+          Be concise. Use markdown. Group findings by severity: Critical, Warning, Suggestion.
+
+          Diff:\n""" + diff
+
           payload = {
               "model": "claude-sonnet-4-20250514",
               "max_tokens": 2000,
-              "messages": [{
-                  "role": "user",
-                  "content": f"""You are a senior Android/Kotlin developer. Review the following git diff.
+              "messages": [{"role": "user", "content": prompt}]
+          }
 
-                          Focus on:
-                            - Kotlin idioms and best practices
-                            - Coroutines / Flow usage
-                            - Architecture (MVVM, Clean Architecture)
-                            - Potential bugs or edge cases
-                            - Test coverage gaps
-                            - Performance issues
-          
-                          Be concise. Use markdown. Group findings by severity: 🔴 Critical, 🟡 Warning, 🟢 Suggestion.
-          
-                          Diff:
-                              {diff}
-                  } ]
-          }
-          
-            req = urllib.request.Request(
-            "https://api.anthropic.com/v1/messages",
-            data=json.dumps(payload).encode(),
-            headers={
-            "Content-Type": "application/json",
-            "x-api-key": os.environ["ANTHROPIC_API_KEY"],
-            "anthropic-version": "2023-06-01"
-          }
-            )
-          
-            with urllib.request.urlopen(req) as resp:
+          req = urllib.request.Request(
+              "https://api.anthropic.com/v1/messages",
+              data=json.dumps(payload).encode(),
+              headers={
+                  "Content-Type": "application/json",
+                  "x-api-key": os.environ["ANTHROPIC_API_KEY"],
+                  "anthropic-version": "2023-06-01"
+              }
+          )
+
+          with urllib.request.urlopen(req) as resp:
               result = json.loads(resp.read())
               review = result["content"][0]["text"]
               open("review.md", "w").write(review)
-            EOF
+          PYEOF
 
       - name: Post review as PR comment
         if: ${{ github.event.inputs.pr_number != '' }}
