@@ -11,6 +11,7 @@ Each topic lives in its own feature module with a working implementation, unit t
 - **Visual** — each feature module has a dedicated screen showing the concept in action
 
 ## Project Structure
+
 ```
 AndroidLab/
 ├── app/                    # Main activity, navigation, Koin setup
@@ -56,6 +57,19 @@ Each new topic follows the same pattern:
 1. Clone the repository
 2. Open in Android Studio
 3. Run the `app` module on an emulator or device (min SDK 30)
+
+## Future Plans
+
+Short list of modules and experiments planned for AndroidLab:
+
+- **`feature-cart`** — full REST contract for an e-commerce cart (OpenAPI 3.1 YAML spec in the module), with **both Ktor client and Retrofit** implementations for side-by-side comparison. Test suite covers all key HTTP status codes (200, 400, 401, 403, 404, 409, 410, 422, 429, 500, 503) using **MockWebServer** for unit-level status/header scenarios and an **embedded Ktor server** for end-to-end flows with stateful cart behavior. README will document client error-mapping decisions (retry, refresh, invalidate, surface to UI).
+- **`feature-paging`** — Paging 3 with Room + network as a single source of truth.
+- **`feature-workmanager`** — background sync with WorkManager, constraints, and backoff strategies.
+- **`feature-datastore`** — Preferences and Proto DataStore, migration from SharedPreferences.
+- **`feature-camerax`** — CameraX capture + image analysis pipeline.
+- **`feature-wearos`** — companion Wear OS module with data layer sync.
+- **Baseline Profiles & Macrobenchmark** — startup and scroll performance measurement across modules.
+- **KMP experiment** — extracting `core` to a Kotlin Multiplatform module targeting iOS.
 
 ## Contributing
 
